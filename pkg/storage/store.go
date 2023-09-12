@@ -180,7 +180,7 @@ func (s *LokiStore) init() error {
 		if err != nil {
 			return err
 		}
-		f, err := fetcher.New(s.chunksCache, s.chunksCacheL2, s.storeCfg.ChunkCacheStubs(), s.schemaCfg, chunkClient, s.storeCfg.ChunkCacheConfig.AsyncCacheWriteBackConcurrency, s.storeCfg.ChunkCacheConfig.AsyncCacheWriteBackBufferSize, s.storeCfg.L2ChunkCacheHandoff)
+		f, err := fetcher.New(s.chunksCache, s.chunksCacheL2, s.storeCfg.ChunkCacheStubs(), p, chunkClient, s.storeCfg.ChunkCacheConfig.AsyncCacheWriteBackConcurrency, s.storeCfg.ChunkCacheConfig.AsyncCacheWriteBackBufferSize, s.storeCfg.L2ChunkCacheHandoff)
 		if err != nil {
 			return err
 		}
@@ -289,7 +289,7 @@ func (s *LokiStore) storeForPeriod(p config.PeriodConfig, tableRange config.Tabl
 		}
 
 		indexReaderWriter = index.NewMonitoredReaderWriter(indexReaderWriter, indexClientReg)
-		chunkWriter := stores.NewChunkWriter(f, s.schemaCfg, indexReaderWriter, s.storeCfg.DisableIndexDeduplication)
+		chunkWriter := stores.NewChunkWriter(f, p, indexReaderWriter, s.storeCfg.DisableIndexDeduplication)
 
 		return chunkWriter, indexReaderWriter,
 			func() {
@@ -315,7 +315,7 @@ func (s *LokiStore) storeForPeriod(p config.PeriodConfig, tableRange config.Tabl
 
 	indexReaderWriter := series.NewIndexReaderWriter(s.schemaCfg, schema, idx, f, s.cfg.MaxChunkBatchSize, s.writeDedupeCache)
 	monitoredReaderWriter := index.NewMonitoredReaderWriter(indexReaderWriter, indexClientReg)
-	chunkWriter := stores.NewChunkWriter(f, s.schemaCfg, monitoredReaderWriter, s.storeCfg.DisableIndexDeduplication)
+	chunkWriter := stores.NewChunkWriter(f, p, monitoredReaderWriter, s.storeCfg.DisableIndexDeduplication)
 
 	return chunkWriter,
 		monitoredReaderWriter,
