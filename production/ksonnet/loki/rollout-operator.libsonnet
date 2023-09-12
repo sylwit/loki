@@ -2,12 +2,10 @@
   local container = $.core.v1.container,
   local deployment = $.apps.v1.deployment,
   local policyRule = $.rbac.v1.policyRule,
-  local role = $.rbac.v1.role,
   local roleBinding = $.rbac.v1.roleBinding,
+  local role = $.rbac.v1.role,
+  local service = $.core.v1.service,
   local serviceAccount = $.core.v1.serviceAccount,
-
-  // Rollout operator.
-  local rollout_operator_enabled = $._config.multi_zone_ingester_enabled,
 
   _images+:: {
     rollout_operator: 'grafana/rollout-operator:v0.1.1',
@@ -16,6 +14,8 @@
   rollout_operator_args:: {
     'kubernetes.namespace': $._config.namespace,
   },
+
+  local rollout_operator_enabled = $._config.multi_zone_ingester_enabled,
 
   rollout_operator_container::
     container.new('rollout-operator', $._images.rollout_operator) +
@@ -38,7 +38,7 @@
     deployment.mixin.spec.strategy.rollingUpdate.withMaxSurge(0) +
     deployment.mixin.spec.strategy.rollingUpdate.withMaxUnavailable(1),
 
-  rollout_operator_role: if !rollout_operator_enabled then {} else
+  rollout_operator_role: if !rollout_operator_enabled then null else
     role.new('rollout-operator-role') +
     role.mixin.metadata.withNamespace($._config.namespace) +
     role.withRulesMixin([
@@ -47,13 +47,13 @@
       policyRule.withVerbs(['list', 'get', 'watch', 'delete']),
       policyRule.withApiGroups('apps') +
       policyRule.withResources(['statefulsets']) +
-      policyRule.withVerbs(['list', 'get', 'watch']),
+      policyRule.withVerbs(['list', 'get', 'watch', 'update', 'patch']),
       policyRule.withApiGroups('apps') +
       policyRule.withResources(['statefulsets/status']) +
       policyRule.withVerbs(['update']),
     ]),
 
-  rollout_operator_rolebinding: if !rollout_operator_enabled then {} else
+  rollout_operator_rolebinding: if !rollout_operator_enabled then null else
     roleBinding.new('rollout-operator-rolebinding') +
     roleBinding.mixin.metadata.withNamespace($._config.namespace) +
     roleBinding.mixin.roleRef.withApiGroup('rbac.authorization.k8s.io') +
@@ -65,7 +65,6 @@
       namespace: $._config.namespace,
     }),
 
-  rollout_operator_service_account: if !rollout_operator_enabled then {} else
+  rollout_operator_service_account: if !rollout_operator_enabled then null else
     serviceAccount.new('rollout-operator'),
-
 }
